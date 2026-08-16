@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4
+
+- Added an "Allow all" option to command approval prompts: alongside "Allow once", you can now approve and stop being asked for future commands. Commands that are hard-blocked for safety are still denied. Backed by the new `localCodingAgent.autoApproveCommands` setting, which you can turn off anytime in Settings.
+
 ## 0.1.3
 
 - Reworked the chat into a live, streaming transcript: tool steps (Terminal, Read file, Search, Git, …) now appear inline as they run — each with a status icon, summary, and live output — so progress is always visible instead of hidden in a collapsed panel.

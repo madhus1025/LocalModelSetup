@@ -91,7 +91,7 @@ CONTEXT_SIZE=16384 \
 **Or install the prebuilt package** (no build tools needed):
 
 ```bash
-code --install-extension local-coding-agent-0.1.3.vsix
+code --install-extension local-coding-agent-0.1.4.vsix
 ```
 
 ### 3️⃣ Chat!
@@ -131,7 +131,7 @@ Any runtime that speaks OpenAI‑style `GET /v1/models` + streaming `POST /v1/ch
 
 - Inference is **loopback‑only** by default; sending context to a non‑local server requires flipping `localCodingAgent.allowRemoteEndpoint` on purpose.
 - Every change is an immutable, hash‑bound diff you review before it touches disk.
-- Commands are classified: reads/builds/tests can auto‑run; deletion, network, package installs, privilege escalation, and Git state changes need approval.
+- Commands are classified: reads/builds/tests can auto‑run; deletion, network, package installs, privilege escalation, and Git state changes need approval. Prefer not to be asked? Hit **Allow all** on a prompt (or enable `localCodingAgent.autoApproveCommands`) to auto‑approve future commands — hard‑blocked ones stay blocked, and you can turn it off in Settings anytime.
 - Likely‑secret env vars are stripped and token/key patterns are redacted from command output.
 - The audit log records *what happened*, never your prompts, code, or secrets.
 

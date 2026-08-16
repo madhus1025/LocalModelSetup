@@ -40,4 +40,35 @@ describe("ApprovalManager", () => {
     await expect(pending).rejects.toMatchObject({ name: "AbortError" });
     expect(sink.showPermissionRequest).toHaveBeenLastCalledWith(undefined);
   });
+
+  it("auto-approves without prompting when the predicate allows it", async () => {
+    const sink = { showPermissionRequest: vi.fn() };
+    const manager = new ApprovalManager(sink, undefined, () => true);
+
+    await expect(
+      manager.request(
+        "Approve",
+        "npm install",
+        ["Package installation"],
+        "danger",
+        new AbortController().signal
+      )
+    ).resolves.toBe(true);
+    expect(sink.showPermissionRequest).not.toHaveBeenCalled();
+  });
+
+  it("still prompts when auto-approval is disabled", async () => {
+    const sink = { showPermissionRequest: vi.fn() };
+    const manager = new ApprovalManager(sink, undefined, () => false);
+
+    void manager.request(
+      "Approve",
+      "npm install",
+      ["Package installation"],
+      "danger",
+      new AbortController().signal
+    );
+    expect(sink.showPermissionRequest).toHaveBeenCalledTimes(1);
+    expect(sink.showPermissionRequest.mock.calls[0]?.[0]).toBeDefined();
+  });
 });

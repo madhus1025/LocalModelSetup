@@ -266,6 +266,23 @@ export class ChatViewProvider
         });
         return;
       case "permissionDecision":
+        if (message.allow && message.scope === "always") {
+          void vscode.workspace
+            .getConfiguration("localCodingAgent")
+            .update("autoApproveCommands", true, vscode.ConfigurationTarget.Global)
+            .then(
+              () =>
+                this.notice(
+                  "info",
+                  "Auto-approving commands from now on. Turn this off anytime in Settings → Local Coding Agent → Auto Approve Commands."
+                ),
+              () =>
+                this.notice(
+                  "warning",
+                  "Could not persist auto-approval; this command was allowed once."
+                )
+            );
+        }
         this.services?.approvals.resolve(
           message.permissionId,
           message.allow

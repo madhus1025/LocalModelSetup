@@ -20,6 +20,7 @@ function configuration(
     maxIterations: 10,
     maxModelRetries: 1,
     autoApplySafeEdits: false,
+    autoApproveCommands: false,
     commandTimeoutSeconds: 30,
     maxToolOutputCharacters: 30_000
   };

@@ -79,7 +79,11 @@ export function activate(context: vscode.ExtensionContext): void {
   const boundary = new WorkspaceBoundary(roots);
   const workspace = new VscodeWorkspaceService(boundary);
   const model = new ConfigurationBackedModelClient(readAgentConfiguration);
-  const approvals = new ApprovalManager(provider, audit);
+  const approvals = new ApprovalManager(
+    provider,
+    audit,
+    () => readAgentConfiguration().autoApproveCommands
+  );
   const changes = new ChangeCoordinator(workspace, provider, audit);
   const diffs = new ReviewDiffProvider(changes);
   const commands = new CommandRunner(approvals);

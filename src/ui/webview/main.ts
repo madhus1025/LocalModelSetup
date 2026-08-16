@@ -551,6 +551,7 @@ function renderApproval(
         <ul>${permission.reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>
         <div class="approval-actions">
           <button id="deny-permission" class="secondary-button">Deny</button>
+          <button id="allow-all-permission" class="secondary-button" title="Allow this and stop asking for future commands. Turn off later in Settings → Local Coding Agent → Auto Approve Commands.">Allow all</button>
           <button id="allow-permission" class="danger-button">Allow once</button>
         </div>
       </section>`;
@@ -561,11 +562,20 @@ function renderApproval(
         allow: false
       })
     );
+    bind("allow-all-permission", () =>
+      post({
+        type: "permissionDecision",
+        permissionId: permission.id,
+        allow: true,
+        scope: "always"
+      })
+    );
     bind("allow-permission", () =>
       post({
         type: "permissionDecision",
         permissionId: permission.id,
-        allow: true
+        allow: true,
+        scope: "once"
       })
     );
     return;

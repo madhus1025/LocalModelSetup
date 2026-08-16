@@ -129,6 +129,7 @@ export type WebviewToExtensionMessage =
       type: "permissionDecision";
       permissionId: string;
       allow: boolean;
+      scope?: "once" | "always";
     };
 
 export type ExtensionToWebviewMessage =

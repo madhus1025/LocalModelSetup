@@ -14,6 +14,7 @@ export interface AgentConfiguration {
   maxIterations: number;
   maxModelRetries: number;
   autoApplySafeEdits: boolean;
+  autoApproveCommands: boolean;
   commandTimeoutSeconds: number;
   maxToolOutputCharacters: number;
 }
@@ -36,6 +37,7 @@ export function readAgentConfiguration(): AgentConfiguration {
     maxIterations: config.get("maxIterations", 20),
     maxModelRetries: config.get("maxModelRetries", 2),
     autoApplySafeEdits: config.get("autoApplySafeEdits", false),
+    autoApproveCommands: config.get("autoApproveCommands", false),
     commandTimeoutSeconds: config.get("commandTimeoutSeconds", 300),
     maxToolOutputCharacters: config.get(
       "maxToolOutputCharacters",

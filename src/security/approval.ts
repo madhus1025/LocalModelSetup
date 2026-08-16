@@ -19,7 +19,8 @@ export class ApprovalManager {
 
   public constructor(
     private readonly sink: ApprovalRequestSink,
-    private readonly audit: AuditSink = noOpAuditSink
+    private readonly audit: AuditSink = noOpAuditSink,
+    private readonly shouldAutoApprove: () => boolean = () => false
   ) {}
 
   public request(
@@ -36,6 +37,14 @@ export class ApprovalManager {
       return Promise.reject(
         new DOMException("Permission request was cancelled.", "AbortError")
       );
+    }
+    if (this.shouldAutoApprove()) {
+      this.audit.record("permission.auto_allowed", {
+        title,
+        severity,
+        reasons
+      });
+      return Promise.resolve(true);
     }
     const request: PermissionRequest = {
       id: randomUUID(),
