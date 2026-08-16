@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.5
+
+- Raised the default `localCodingAgent.maxIterations` from 20 to 50 so longer multi-step tasks are less likely to stop early. It remains configurable (1–100), and you can always send "continue" to resume a run that stopped at the limit.
+
 ## 0.1.4
 
 - Added an "Allow all" option to command approval prompts: alongside "Allow once", you can now approve and stop being asked for future commands. Commands that are hard-blocked for safety are still denied. Backed by the new `localCodingAgent.autoApproveCommands` setting, which you can turn off anytime in Settings.

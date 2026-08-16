@@ -34,7 +34,7 @@ export function readAgentConfiguration(): AgentConfiguration {
     topK: config.get("topK", 20),
     enableThinking: config.get("enableThinking", true),
     preserveThinking: config.get("preserveThinking", true),
-    maxIterations: config.get("maxIterations", 20),
+    maxIterations: config.get("maxIterations", 50),
     maxModelRetries: config.get("maxModelRetries", 2),
     autoApplySafeEdits: config.get("autoApplySafeEdits", false),
     autoApproveCommands: config.get("autoApproveCommands", false),

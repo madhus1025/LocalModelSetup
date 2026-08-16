@@ -2,5 +2,5 @@ node_modules/
 dist/
 coverage/
 *.vsix
-!local-coding-agent-0.1.4.vsix
+!local-coding-agent-0.1.5.vsix
 .DS_Store
