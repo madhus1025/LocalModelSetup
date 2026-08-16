@@ -2,7 +2,7 @@
   "name": "local-coding-agent",
   "displayName": "Local Coding Agent",
   "description": "A repository-aware coding agent backed by an OpenAI-compatible local model endpoint.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "publisher": "local-ai",
   "private": true,
   "license": "MIT",

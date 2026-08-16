@@ -91,7 +91,7 @@ CONTEXT_SIZE=16384 \
 **Or install the prebuilt package** (no build tools needed):
 
 ```bash
-code --install-extension local-coding-agent-0.1.2.vsix
+code --install-extension local-coding-agent-0.1.3.vsix
 ```
 
 ### 3️⃣ Chat!

@@ -21,9 +21,11 @@ import { marked } from "marked";
 import type {
   AgentMode,
   ChangeReviewRequest,
+  DisplayMessage,
   ExtensionToWebviewMessage,
   PermissionRequest,
   RunStatus,
+  ToolActivity,
   WebviewState,
   WebviewToExtensionMessage
 } from "../../shared/protocol";
@@ -46,6 +48,7 @@ let messageRenderTimer: number | undefined;
 const pendingMessageRenders = new Set<string>();
 const reasoningByMessageId = new Map<string, string>();
 const userExpandedThoughts = new Set<string>();
+let shownApprovalKey = "";
 let runElapsedTimer: number | undefined;
 let runStartedAtMs = 0;
 
@@ -89,7 +92,6 @@ app.innerHTML = `
   </section>
   <section id="messages" class="messages" aria-label="Chat history"></section>
   <section id="run-status" class="run-status" aria-live="polite"></section>
-  <section id="activity" class="activity" aria-label="Tool activity"></section>
   <section id="approval-region"></section>
   <footer class="composer">
     <div class="composer-controls">
@@ -115,7 +117,6 @@ app.innerHTML = `
 `;
 
 const messagesElement = requiredElement("messages");
-const activityElement = requiredElement("activity");
 const approvalRegion = requiredElement("approval-region");
 const promptElement = requiredElement<HTMLTextAreaElement>("prompt");
 const modeElement = requiredElement<HTMLSelectElement>("mode");
@@ -156,7 +157,7 @@ window.addEventListener("message", (event: MessageEvent<unknown>) => {
       );
       if (target !== undefined) {
         target.content += message.delta;
-        renderedMessageFingerprint = messageFingerprint(state);
+        renderedMessageFingerprint = transcriptFingerprint(state);
         scheduleMessageRender(target.id);
       }
     }
@@ -184,16 +185,15 @@ function render(): void {
     reasoningByMessageId.clear();
     userExpandedThoughts.clear();
   }
-  const fingerprint = messageFingerprint(state);
+  const fingerprint = transcriptFingerprint(state);
   if (
     renderedConversationId !== state.activeConversationId ||
     renderedMessageFingerprint !== fingerprint
   ) {
-    renderMessages(state);
+    renderTranscript(state);
     renderedConversationId = state.activeConversationId;
     renderedMessageFingerprint = fingerprint;
   }
-  renderActivity(state);
   renderRunStatus(state);
   renderApproval(state.pendingPermission, state.pendingReview);
   renderComposerState(state);
@@ -223,35 +223,125 @@ function renderHeaderState(current: WebviewState): void {
   status.title = current.model.detail ?? current.model.endpoint;
 }
 
-function renderMessages(current: WebviewState): void {
+type TranscriptItem =
+  | { kind: "message"; at: number; message: DisplayMessage }
+  | { kind: "activity"; at: number; activity: ToolActivity };
+
+const TOOL_LABELS: Record<string, string> = {
+  run_command: "Terminal",
+  read_file: "Read file",
+  read_file_range: "Read file",
+  create_file: "Create file",
+  edit_file: "Edit file",
+  delete_file: "Delete file",
+  apply_patch: "Apply patch",
+  format_document: "Format document",
+  list_files: "List files",
+  search_files: "Find files",
+  search_text: "Search text",
+  find_symbol: "Find symbol",
+  get_active_file: "Active file",
+  get_selected_code: "Selected code",
+  get_open_editors: "Open editors",
+  read_diagnostics: "Diagnostics",
+  open_file: "Open file",
+  git_status: "Git status",
+  git_diff: "Git diff",
+  git_log: "Git log",
+  git_blame: "Git blame",
+  inspect_commit: "Inspect commit"
+};
+
+function buildTranscript(current: WebviewState): TranscriptItem[] {
+  const items: TranscriptItem[] = [
+    ...current.messages.map(
+      (message): TranscriptItem => ({
+        kind: "message",
+        at: Date.parse(message.createdAt) || 0,
+        message
+      })
+    ),
+    ...current.activities.map(
+      (activity): TranscriptItem => ({
+        kind: "activity",
+        at: Date.parse(activity.startedAt) || 0,
+        activity
+      })
+    )
+  ];
+  items.sort((left, right) => left.at - right.at);
+  return items;
+}
+
+function renderTranscript(current: WebviewState): void {
   const wasNearBottom =
     messagesElement.scrollHeight -
       messagesElement.scrollTop -
       messagesElement.clientHeight <
-    80;
-  messagesElement.innerHTML =
-    current.messages.length === 0
-      ? `<div class="empty-state">
-          <div class="empty-icon">⌘</div>
-          <h2>Work locally</h2>
-          <p>Ask a question, review an edit, or let the agent inspect, change, and verify this repository.</p>
-        </div>`
-      : current.messages
-          .map(
-            (message) => `
-          <article class="message message-${message.role} message-${message.state}" data-message-id="${escapeAttribute(message.id)}">
-            <div class="message-label">${message.role === "user" ? "You" : message.role === "assistant" ? "Agent" : "Context"}</div>
-            <div class="message-content" id="message-${escapeAttribute(message.id)}"></div>
-            ${message.state === "streaming" ? '<span class="streaming-dot" aria-label="Streaming"></span>' : ""}
-          </article>`
-          )
-          .join("");
-  for (const message of current.messages) {
-    renderMessageContent(message.id, message.content);
+    120;
+
+  if (current.messages.length === 0 && current.activities.length === 0) {
+    messagesElement.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">⌘</div>
+        <h2>Work locally</h2>
+        <p>Ask a question, review an edit, or let the agent inspect, change, and verify this repository.</p>
+      </div>`;
+    return;
+  }
+
+  const items = buildTranscript(current);
+  messagesElement.innerHTML = items
+    .map((item) =>
+      item.kind === "message"
+        ? messageMarkup(item.message)
+        : activityCardMarkup(item.activity)
+    )
+    .join("");
+
+  for (const item of items) {
+    if (item.kind === "message") {
+      renderMessageContent(item.message.id, item.message.content);
+    }
   }
   if (wasNearBottom) {
     scrollToBottom();
   }
+}
+
+function messageMarkup(message: DisplayMessage): string {
+  const label =
+    message.role === "user"
+      ? "You"
+      : message.role === "assistant"
+        ? "Agent"
+        : "Context";
+  const typing =
+    message.state === "streaming"
+      ? ' <span class="typing" aria-label="Working"><i></i><i></i><i></i></span>'
+      : "";
+  return `
+    <article class="message message-${message.role} message-${message.state}" data-message-id="${escapeAttribute(message.id)}">
+      <div class="message-label">${label}${typing}</div>
+      <div class="message-content" id="message-${escapeAttribute(message.id)}"></div>
+    </article>`;
+}
+
+function activityCardMarkup(activity: ToolActivity): string {
+  const detail =
+    activity.state === "running" &&
+    activity.detail !== undefined &&
+    activity.detail.length > 0
+      ? `<div class="activity-detail">${escapeHtml(activity.detail)}</div>`
+      : "";
+  return `
+    <div class="activity-card activity-${activity.state}">
+      <span class="activity-icon" aria-hidden="true">${activityIcon(activity.state)}</span>
+      <div class="activity-main">
+        <div class="activity-title">${escapeHtml(TOOL_LABELS[activity.name] ?? activity.name)}</div>
+        <div class="activity-summary">${escapeHtml(activity.summary)}</div>
+        ${detail}
+      </div>
+    </div>`;
 }
 
 function renderMessageContent(id: string, content: string): void {
@@ -347,32 +437,6 @@ function scheduleMessageRender(id: string): void {
     pendingMessageRenders.clear();
     scrollToBottom();
   }, 75);
-}
-
-function renderActivity(current: WebviewState): void {
-  if (current.activities.length === 0) {
-    activityElement.innerHTML = "";
-    return;
-  }
-  activityElement.innerHTML = `
-    <details ${current.isRunning ? "open" : ""}>
-      <summary>Tool activity (${current.activities.length})</summary>
-      <div class="activity-list">
-        ${current.activities
-          .map(
-            (activity) => `
-          <div class="activity-item activity-${activity.state}">
-            <span class="activity-state">${activityIcon(activity.state)}</span>
-            <div>
-              <strong>${escapeHtml(activity.name)}</strong>
-              <div>${escapeHtml(activity.summary)}</div>
-              ${activity.detail === undefined ? "" : `<small>${escapeHtml(activity.detail)}</small>`}
-            </div>
-          </div>`
-          )
-          .join("")}
-      </div>
-    </details>`;
 }
 
 function renderRunStatus(current: WebviewState): void {
@@ -471,6 +535,14 @@ function renderApproval(
   permission: PermissionRequest | undefined,
   review: ChangeReviewRequest | undefined
 ): void {
+  const key = permission?.id ?? review?.id ?? "";
+  const isNew = key !== "" && key !== shownApprovalKey;
+  shownApprovalKey = key;
+  if (isNew) {
+    requestAnimationFrame(() =>
+      approvalRegion.scrollIntoView({ block: "nearest", behavior: "smooth" })
+    );
+  }
   if (permission !== undefined) {
     approvalRegion.innerHTML = `
       <section class="approval-card danger-card">
@@ -665,11 +737,13 @@ function scrollToBottom(): void {
 function activityIcon(stateValue: string): string {
   switch (stateValue) {
     case "running":
-      return "◌";
+      return "●";
     case "succeeded":
       return "✓";
     case "failed":
-      return "!";
+      return "✗";
+    case "cancelled":
+      return "⊘";
     default:
       return "■";
   }
@@ -714,11 +788,15 @@ function formatNumber(value: number): string {
   }).format(value);
 }
 
-function messageFingerprint(current: WebviewState): string {
-  return current.messages
+function transcriptFingerprint(current: WebviewState): string {
+  const messages = current.messages
+    .map((message) => `${message.id}:${message.state}:${message.content.length}`)
+    .join("|");
+  const activities = current.activities
     .map(
-      (message) =>
-        `${message.id}:${message.state}:${message.content.length}`
+      (activity) =>
+        `${activity.id}:${activity.state}:${activity.summary.length}:${(activity.detail ?? "").length}`
     )
     .join("|");
+  return `${messages}#${activities}`;
 }
