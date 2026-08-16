@@ -1,0 +1,10 @@
+.github/**
+.vscode/**
+.gitignore
+coverage/**
+src/**
+**/*.map
+**/*.test.*
+esbuild.mjs
+tsconfig.json
+vitest.config.mts

@@ -1,0 +1,242 @@
+{
+  "name": "local-coding-agent",
+  "displayName": "Local Coding Agent",
+  "description": "A repository-aware coding agent backed by an OpenAI-compatible local model endpoint.",
+  "version": "0.1.2",
+  "publisher": "local-ai",
+  "private": true,
+  "license": "MIT",
+  "author": "madhus1025",
+  "homepage": "https://github.com/madhus1025/LocalModelSetup#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/madhus1025/LocalModelSetup.git"
+  },
+  "bugs": {
+    "url": "https://github.com/madhus1025/LocalModelSetup/issues"
+  },
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Other"
+  ],
+  "keywords": [
+    "local llm",
+    "coding agent",
+    "llama.cpp",
+    "kat-coder",
+    "offline"
+  ],
+  "activationEvents": [
+    "onView:localCodingAgent.chat",
+    "onCommand:localCodingAgent.newConversation",
+    "onCommand:localCodingAgent.stop",
+    "onCommand:localCodingAgent.checkModel",
+    "onCommand:localCodingAgent.openAuditLog"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "localCodingAgent.newConversation",
+        "title": "Local Coding Agent: New Conversation",
+        "icon": "$(add)"
+      },
+      {
+        "command": "localCodingAgent.clearContext",
+        "title": "Local Coding Agent: Clear Context",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "localCodingAgent.stop",
+        "title": "Local Coding Agent: Stop",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "localCodingAgent.checkModel",
+        "title": "Local Coding Agent: Check Model",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "localCodingAgent.openSettings",
+        "title": "Local Coding Agent: Open Settings",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "localCodingAgent.openAuditLog",
+        "title": "Local Coding Agent: Open Audit Log",
+        "icon": "$(output)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "localCodingAgent",
+          "title": "Local Coding Agent",
+          "icon": "media/agent.svg"
+        }
+      ]
+    },
+    "views": {
+      "localCodingAgent": [
+        {
+          "type": "webview",
+          "id": "localCodingAgent.chat",
+          "name": "Agent"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "localCodingAgent.newConversation",
+          "when": "view == localCodingAgent.chat",
+          "group": "navigation@1"
+        },
+        {
+          "command": "localCodingAgent.stop",
+          "when": "view == localCodingAgent.chat",
+          "group": "navigation@2"
+        },
+        {
+          "command": "localCodingAgent.openSettings",
+          "when": "view == localCodingAgent.chat",
+          "group": "navigation@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Local Coding Agent",
+      "properties": {
+        "localCodingAgent.endpoint": {
+          "type": "string",
+          "default": "http://127.0.0.1:8080/v1",
+          "scope": "machine",
+          "description": "OpenAI-compatible endpoint. Non-loopback endpoints are blocked unless explicitly enabled."
+        },
+        "localCodingAgent.model": {
+          "type": "string",
+          "default": "kat-coder-v2.5-dev",
+          "scope": "machine",
+          "description": "Model name or llama-server alias sent to the endpoint."
+        },
+        "localCodingAgent.allowRemoteEndpoint": {
+          "type": "boolean",
+          "default": false,
+          "scope": "machine",
+          "description": "Allow model traffic to a non-loopback endpoint. Leave disabled to guarantee repository context stays on this machine."
+        },
+        "localCodingAgent.contextLength": {
+          "type": "integer",
+          "default": 65536,
+          "minimum": 8192,
+          "maximum": 262144,
+          "scope": "machine",
+          "description": "Usable context budget for prompts, tool results, and output."
+        },
+        "localCodingAgent.maxOutputTokens": {
+          "type": "integer",
+          "default": 16384,
+          "minimum": 512,
+          "maximum": 81920,
+          "scope": "machine",
+          "description": "Maximum tokens generated in one model turn."
+        },
+        "localCodingAgent.temperature": {
+          "type": "number",
+          "default": 1.0,
+          "minimum": 0,
+          "maximum": 2,
+          "scope": "machine"
+        },
+        "localCodingAgent.topP": {
+          "type": "number",
+          "default": 0.95,
+          "minimum": 0,
+          "maximum": 1,
+          "scope": "machine"
+        },
+        "localCodingAgent.topK": {
+          "type": "integer",
+          "default": 20,
+          "minimum": 0,
+          "maximum": 200,
+          "scope": "machine"
+        },
+        "localCodingAgent.enableThinking": {
+          "type": "boolean",
+          "default": true,
+          "scope": "machine",
+          "description": "Allow KAT-Coder to reason before responding. Reasoning text is retained for continuity but is not displayed."
+        },
+        "localCodingAgent.preserveThinking": {
+          "type": "boolean",
+          "default": true,
+          "scope": "machine",
+          "description": "Retain model reasoning state across agent turns when supported by the server template."
+        },
+        "localCodingAgent.maxIterations": {
+          "type": "integer",
+          "default": 20,
+          "minimum": 1,
+          "maximum": 100,
+          "scope": "machine",
+          "description": "Maximum model/tool turns for one request."
+        },
+        "localCodingAgent.maxModelRetries": {
+          "type": "integer",
+          "default": 2,
+          "minimum": 0,
+          "maximum": 5,
+          "scope": "machine"
+        },
+        "localCodingAgent.autoApplySafeEdits": {
+          "type": "boolean",
+          "default": false,
+          "scope": "machine",
+          "description": "In Agent mode, apply workspace-contained edits automatically. Every edit remains visible in the audit trail."
+        },
+        "localCodingAgent.commandTimeoutSeconds": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 5,
+          "maximum": 3600,
+          "scope": "machine"
+        },
+        "localCodingAgent.maxToolOutputCharacters": {
+          "type": "integer",
+          "default": 30000,
+          "minimum": 2000,
+          "maximum": 200000,
+          "scope": "machine"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "node esbuild.mjs",
+    "compile": "npm run check && npm run build",
+    "watch": "node esbuild.mjs --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "vscode:prepublish": "npm run compile",
+    "package": "vsce package --no-dependencies --allow-missing-repository"
+  },
+  "dependencies": {
+    "diff": "^9.0.0",
+    "dompurify": "^3.2.6",
+    "highlight.js": "^11.11.1",
+    "marked": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "@types/vscode": "^1.96.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}
